@@ -1,0 +1,14 @@
+Tasks
+=====
+
+ * if capslock is pressed when some text is selected, change it to the new locale
+ 
+   should work with:
+   - standard text boxes
+   - rich text (wordpad)
+   - word
+   - internet explorer address / search / fields
+   - firefox address / search / fields
+   
+ * add a manifest to make the message box look like Windows XP
+ 
