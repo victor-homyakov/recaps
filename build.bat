@@ -8,7 +8,7 @@ if exist Release\nul rd /s/q Release
 if exist src\nul rd /s/q src
 
 :: build binaries
-devenv recaps.2005.sln /rebuild Release
+devenv recaps.sln /rebuild Release
 if errorlevel 1 goto error
 
 :: build binary distribution using Inno Setup

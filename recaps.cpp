@@ -53,13 +53,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // Hook stuff
 #define WH_KEYBOARD_LL 13
 #define LLKHF_INJECTED 0x10
-typedef struct {
+/*typedef struct {
     DWORD vkCode;
     DWORD scanCode;
     DWORD flags;
     DWORD time;
     ULONG_PTR dwExtraInfo;
-} KBDLLHOOKSTRUCT, *PKBDLLHOOKSTRUCT;
+} KBDLLHOOKSTRUCT, *PKBDLLHOOKSTRUCT;*/
 
 // General constants
 #define MAXLEN 1024
