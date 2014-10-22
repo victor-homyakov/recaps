@@ -1,6 +1,6 @@
 @echo off
 
-set FILENAME=recaps-0.6
+set FILENAME=recaps-0.7
 
 :: clean up
 if exist Output\*.* del /q Output\*.*

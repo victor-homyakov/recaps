@@ -27,7 +27,7 @@ Revision history
 0.4	Fixed language not being switched in some applications.
 
 0.3	Added a tray icon, a menu and support for more than two 
-	languages. Recaps now cycles between the lanugages selected
+	languages. Recaps now cycles between the languages selected
 	in the menu.
 
 0.2	Changed Shift-CapsLock to change language as well as CapsLock.
