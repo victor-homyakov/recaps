@@ -2,6 +2,7 @@
 
 Recaps - change language and keyboard layout using the CapsLock key.
 Copyright (C) 2007 Eli Golovinsky
+Copyright (C) 2014 Victor Homyakov
 
 -------------------------------------------------------------------------------
 
@@ -30,15 +31,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
     L"Recaps allows you to quickly switch the current\r\n"\
     L"language using the Capslock key.\r\n"\
     L"\r\n"\
-    L"Capslock changes the current keyboard laguange.\r\n"\
-    L"Ctrl-Capslock fixes text you typed in the wrong laguange.\r\n"\
+    L"Capslock changes the current keyboard language.\r\n"\
+    L"Ctrl-Capslock fixes text you typed in the wrong language.\r\n"\
     L"Alt-Capslock is the old Capslock that lets you type in CAPITAL.\r\n"\
+    L"\r\n"\
+    L"LeftAlt-LeftShift sets the current language to the first in list\r\n"\
+    L"RightAlt-RightShift sets the current language to the second in list\r\n"\
     L"\r\n"\
     L"http://www.gooli.org/blog/recaps\r\n\r\n"\
     L"Eli Golovinsky, Israel 2008\r\n"
 
 #define HELP_TITLE \
-    L"Recaps 0.6 - Retake your Capslock!"
+    L"Recaps 0.7 - Retake your Capslock!"
 
 // Tray icon constants
 #define ID_TRAYICON          1
@@ -165,8 +169,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 int OnTrayIcon(HWND hWnd, WPARAM wParam, LPARAM lParam) {
     UNREFERENCED_PARAMETER(wParam);
 
-    if (g_modalShown == TRUE)
+    if (g_modalShown == TRUE) {
         return 0;
+    }
 
     switch (lParam) {
     case WM_RBUTTONUP:
@@ -206,14 +211,15 @@ BOOL ShowPopupMenu(HWND hWnd) {
     int i = 0;
     // Create the menu
     HMENU hPop = CreatePopupMenu();
-    InsertMenu(hPop, i++, MF_BYPOSITION | MF_STRING, ID_ABOUT, L"Help...");
+    InsertMenu(hPop, i++, MF_BYPOSITION | MF_STRING, ID_ABOUT, L"About");
     InsertMenu(hPop, i++, MF_SEPARATOR, 0, NULL);
 
     // Add items for the languages
     for (UINT layout = 0; layout < g_keyboardInfo.count; layout++) {
         UINT flags = MF_BYPOSITION | MF_STRING;
-        if (g_keyboardInfo.inUse[layout])
+        if (g_keyboardInfo.inUse[layout]) {
             flags |= MF_CHECKED;
+        }
         InsertMenu(hPop, i++, flags, ID_LANG+layout, g_keyboardInfo.names[layout]);
         g_keyboardInfo.menuIds[layout] = ID_LANG+layout;
     }
@@ -237,8 +243,9 @@ BOOL ShowPopupMenu(HWND hWnd) {
     g_modalShown = FALSE;
 
     // Send a command message to the window to handle the menu item the user chose
-    if (cmd)
+    if (cmd) {
         SendMessage(hWnd, WM_COMMAND, cmd, 0);
+    }
 
     DestroyMenu(hPop);
 
@@ -321,7 +328,7 @@ HKL GetCurrentLayout() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Activate the selected language
+// Activates the selected language
 HKL ChangeInputLanguage(UINT newLanguage) {
     HWND hwnd = RemoteGetFocus();
     g_keyboardInfo.current = newLanguage;
@@ -361,6 +368,30 @@ HKL SwitchLayout() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Switch to active layout with desired number if it is not selected yet.
+void SwitchToLayoutNumber(int number) {
+    HKL currentLayout = GetCurrentLayout();
+    BOOL found = FALSE;
+    UINT languageIndex;
+    for (UINT i = 0; i < g_keyboardInfo.count; i++) {
+        if (!g_keyboardInfo.inUse[i]) {
+            continue;
+        }
+        if (number-- == 0) {
+            if (g_keyboardInfo.hkls[i] != currentLayout) {
+                found = TRUE;
+                languageIndex = i;
+            }
+            break;
+        }
+    }
+
+    if (found) {
+        ChangeInputLanguage(languageIndex);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Selects the entire current line and converts it to the current kwyboard layout
 void SwitchAndConvert(void*) {
     SendKeyCombo(VK_CONTROL, 'A', TRUE);
@@ -384,20 +415,43 @@ LRESULT CALLBACK LowLevelHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
     // ignore injected keystrokes
     if ((data->flags & LLKHF_INJECTED) == 0) {
-        BOOL caps = wParam == WM_KEYDOWN && data->vkCode == VK_CAPITAL;
-        if (caps) {
-            if (IsKeyPressed(VK_CONTROL)) {
-                // Handle Ctrl-CapsLock - switch current layout and convert text in current field
-                // We start SwitchLayoutAndConvertSelected in another thread since it simulates 
-                // keystrokes to copy and paste the teset which call back into this hook.
-                // That isn't good.
-                _beginthread(SwitchAndConvert, 0, NULL);
-            } else {
-                // Handle CapsLock - only switch current layout
-                SwitchLayout();
+        //WM_KEYDOWN WM_KEYUP WM_SYSKEYDOWN WM_SYSKEYUP
+        if (wParam == WM_KEYDOWN) {
+            switch (data->vkCode) {
+            case VK_CAPITAL:
+                if (IsKeyPressed(VK_CONTROL)) {
+                    // Handle Ctrl-CapsLock - switch current layout and convert text in current field
+                    // We start SwitchLayoutAndConvertSelected in another thread since it simulates 
+                    // keystrokes to copy and paste the teset which call back into this hook.
+                    // That isn't good.
+                    _beginthread(SwitchAndConvert, 0, NULL);
+                } else {
+                    // Handle CapsLock - only switch current layout
+                    SwitchLayout();
+                }
+                return 1; // prevent windows from handling the keystroke
+            default:
+                break;
             }
-            return 1; // prevent windows from handling the keystroke
-		}
+        } else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
+            //PrintDebugString("WM_KEYUP vkCode %d lmenu %d lshift %d ctrl %d", data->vkCode, IsKeyPressed(VK_LMENU), IsKeyPressed(VK_LSHIFT), IsKeyPressed(VK_CONTROL));
+            switch (data->vkCode) {
+            case VK_LMENU:
+            case VK_LSHIFT:
+                if (IsKeyPressed(VK_LMENU) && IsKeyPressed(VK_LSHIFT) && !IsKeyPressed(VK_CONTROL)) {
+                    SwitchToLayoutNumber(0);
+                }
+                break;
+            case VK_RMENU:
+            case VK_RSHIFT:
+                if (IsKeyPressed(VK_RMENU) && IsKeyPressed(VK_RSHIFT) && !IsKeyPressed(VK_CONTROL)) {
+                    SwitchToLayoutNumber(1);
+                }
+                break;
+            default:
+                break;
+            }
+        }
     }
 
     return CallNextHookEx(g_hHook, nCode, wParam, lParam);

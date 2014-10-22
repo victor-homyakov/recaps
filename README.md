@@ -1,13 +1,16 @@
-Recaps 0.6
+Recaps 0.7
 ------------------------------------
 
-This simple program allows you to switch between languages using the mostly-unused CapsLock key instead of the clumsy Alt+Shift combination.
+This simple program allows you to switch between languages using the mostly-unused CapsLock key.
 
 Just press CapsLock and the language will change. You can use Alt-CapsLock if you still need the old CapsLock action - to write a lot of text in capital letters.
 
 If you accidentally typed some text in the wrong layout, Ctrl-Capslock should fix it.
 
 If you have more than two languages installed, you can select the ones you want to cycle through if you right click the application's icon.
+
+Also it improves language switching using Alt-Shift combination: LeftAlt-LeftShift will always switch to the first language installed,
+while RightAlt-RightShift will always switch to the second.
 
 Enjoy!
 
@@ -17,6 +20,8 @@ http://www.gooli.org/
 
 Revision history
 ------------------------------------
+0.7     Added LeftAlt-LeftShift and RightAlt-RightShift combinations.
+
 0.6	Added conversion of text typed with the wrong layout 
 	using Ctrl-CapsLock. Alt-CapsLock now changes the old 
 	CapsLock mode.
