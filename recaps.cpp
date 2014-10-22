@@ -321,18 +321,30 @@ HKL GetCurrentLayout() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Activate the selected language
+HKL ChangeInputLanguage(UINT newLanguage) {
+    HWND hwnd = RemoteGetFocus();
+    g_keyboardInfo.current = newLanguage;
+    PostMessage(hwnd, WM_INPUTLANGCHANGEREQUEST, 0, (LPARAM)(g_keyboardInfo.hkls[g_keyboardInfo.current]));
+#ifdef _DEBUG
+    PrintDebugString("Language set to %S", g_keyboardInfo.names[g_keyboardInfo.current]);
+#endif
+    return g_keyboardInfo.hkls[g_keyboardInfo.current];
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Switches the current language
 HKL SwitchLayout() {
     HKL currentLayout = GetCurrentLayout();
 
     // Find the current keyboard layout's index
-    UINT i;
-    for (i = 0; i < g_keyboardInfo.count; i++) {
+    UINT currentLanguageIndex = 0;
+    for (UINT i = 0; i < g_keyboardInfo.count; i++) {
         if (g_keyboardInfo.hkls[i] == currentLayout) {
+            currentLanguageIndex = i;
             break;
         }
     }
-    UINT currentLanguageIndex = i;
 
     // Find the next active layout
     BOOL found = FALSE;
@@ -345,18 +357,7 @@ HKL SwitchLayout() {
         }
     }
 
-    // Activate the selected language
-    if (found) {
-        HWND hwnd = RemoteGetFocus();
-        g_keyboardInfo.current = newLanguage;
-        PostMessage(hwnd, WM_INPUTLANGCHANGEREQUEST, 0, (LPARAM)(g_keyboardInfo.hkls[g_keyboardInfo.current]));
-        #ifdef _DEBUG
-            PrintDebugString("Language set to %S", g_keyboardInfo.names[g_keyboardInfo.current]);
-        #endif
-        return g_keyboardInfo.hkls[g_keyboardInfo.current];
-    }
-
-    return NULL;
+    return found ? ChangeInputLanguage(newLanguage) : NULL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -369,6 +370,12 @@ void SwitchAndConvert(void*) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Checks key state
+BOOL IsKeyPressed(int nVirtKey) {
+    return (GetKeyState(nVirtKey) & 0x80000000) > 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // A LowLevelHookProc implementation that captures the CapsLock key
 LRESULT CALLBACK LowLevelHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode < 0) return CallNextHookEx(g_hHook, nCode, wParam, lParam);
@@ -377,21 +384,20 @@ LRESULT CALLBACK LowLevelHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
     // ignore injected keystrokes
     if ((data->flags & LLKHF_INJECTED) == 0) {
-        BOOL ctrl =  (GetKeyState(VK_CONTROL) & 0x80000000) > 0;
-        BOOL caps =  data->vkCode == VK_CAPITAL && wParam == WM_KEYDOWN;
-
-        if (caps && !ctrl) {
-            // Handle CapsLock - only switch current layout
-            SwitchLayout();
-            return 1;
-        } else if (caps && ctrl) {
-            // Handle Ctrl-CapsLock - switch current layout and convert text in current field
-            // We start SwitchLayoutAndConvertSelected in another thread since it simulates 
-            // keystrokes to copy and paste the teset which call back into this hook.
-            // That isn't good..
-            _beginthread(SwitchAndConvert, 0, NULL);
+        BOOL caps = wParam == WM_KEYDOWN && data->vkCode == VK_CAPITAL;
+        if (caps) {
+            if (IsKeyPressed(VK_CONTROL)) {
+                // Handle Ctrl-CapsLock - switch current layout and convert text in current field
+                // We start SwitchLayoutAndConvertSelected in another thread since it simulates 
+                // keystrokes to copy and paste the teset which call back into this hook.
+                // That isn't good.
+                _beginthread(SwitchAndConvert, 0, NULL);
+            } else {
+                // Handle CapsLock - only switch current layout
+                SwitchLayout();
+            }
             return 1; // prevent windows from handling the keystroke
-        }
+		}
     }
 
     return CallNextHookEx(g_hHook, nCode, wParam, lParam);
