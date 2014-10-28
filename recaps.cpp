@@ -394,7 +394,12 @@ void SwitchToLayoutNumber(int number) {
 ///////////////////////////////////////////////////////////////////////////////
 // Selects the entire current line and converts it to the current kwyboard layout
 void SwitchAndConvert(void*) {
-    SendKeyCombo(VK_CONTROL, 'A', TRUE);
+	DWORD dwStart, dwEnd;
+	dwStart = dwEnd = 0;
+	HWND hwnd = RemoteGetFocus();
+	SendMessage(hwnd, EM_GETSEL, (WPARAM)&dwStart, (LPARAM)&dwEnd);
+	if ((dwStart - dwEnd) == 0 )  
+        SendKeyCombo(VK_CONTROL, 'A', TRUE); //If no text selected
     HKL sourceLayout = GetCurrentLayout();
     HKL targetLayout = SwitchLayout();
     ConvertSelectedTextInActiveWindow(sourceLayout, targetLayout);
