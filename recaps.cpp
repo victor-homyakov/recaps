@@ -42,7 +42,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
     L"Eli Golovinsky, Israel 2008\r\n"
 
 #define HELP_TITLE \
-    L"Recaps 0.7 - Retake your Capslock!"
+    L"Recaps 0.8 - Retake your Capslock!"
 
 // Tray icon constants
 #define ID_TRAYICON          1
