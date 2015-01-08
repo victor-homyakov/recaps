@@ -392,9 +392,22 @@ void SwitchToLayoutNumber(int number) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Selects the entire current line and converts it to the current kwyboard layout
+// Converts current selection or the entire text to the current keyboard layout
 void SwitchAndConvert(void*) {
+    DWORD start, end;
+    start = end = 0;
+    SendMessage(RemoteGetFocus(), EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
+    // start == 2815948, end == 258 when in address bar of Chrome
+    // start == 3666796, end == 258 when in address bar of Firefox
+
+#ifdef _DEBUG
+    PrintDebugString("Selection from %d to %d", start, end);
+#endif
+
+    if (start >= end) {
+        // If no text selected
         SendKeyCombo(VK_CONTROL, 'A', TRUE);
+    }
     HKL sourceLayout = GetCurrentLayout();
     HKL targetLayout = SwitchLayout();
     ConvertSelectedTextInActiveWindow(sourceLayout, targetLayout);
