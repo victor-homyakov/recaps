@@ -394,7 +394,7 @@ void SwitchToLayoutNumber(int number) {
 ///////////////////////////////////////////////////////////////////////////////
 // Selects the entire current line and converts it to the current kwyboard layout
 void SwitchAndConvert(void*) {
-    SendKeyCombo(VK_CONTROL, 'A', TRUE);
+        SendKeyCombo(VK_CONTROL, 'A', TRUE);
     HKL sourceLayout = GetCurrentLayout();
     HKL targetLayout = SwitchLayout();
     ConvertSelectedTextInActiveWindow(sourceLayout, targetLayout);
@@ -405,6 +405,11 @@ void SwitchAndConvert(void*) {
 BOOL IsKeyPressed(int nVirtKey) {
     return (GetKeyState(nVirtKey) & 0x80000000) > 0;
 }
+
+BOOL g_lMenuKeyPressed = FALSE;
+BOOL g_lShiftKeyPressed = FALSE;
+BOOL g_rMenuKeyPressed = FALSE;
+BOOL g_rShiftKeyPressed = FALSE;
 
 ///////////////////////////////////////////////////////////////////////////////
 // A LowLevelHookProc implementation that captures the CapsLock key
@@ -437,18 +442,42 @@ LRESULT CALLBACK LowLevelHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
             //PrintDebugString("WM_KEYUP vkCode %d lmenu %d lshift %d ctrl %d", data->vkCode, IsKeyPressed(VK_LMENU), IsKeyPressed(VK_LSHIFT), IsKeyPressed(VK_CONTROL));
             switch (data->vkCode) {
             case VK_LMENU:
-            case VK_LSHIFT:
-                if (IsKeyPressed(VK_LMENU) && IsKeyPressed(VK_LSHIFT) && !IsKeyPressed(VK_CONTROL)) {
+                if (!g_lMenuKeyPressed && IsKeyPressed(VK_LMENU) && IsKeyPressed(VK_LSHIFT) && !IsKeyPressed(VK_CONTROL)) {
                     SwitchToLayoutNumber(0);
                 }
+                g_lMenuKeyPressed = FALSE;
+                break;
+            case VK_LSHIFT:
+                if (!g_lShiftKeyPressed && IsKeyPressed(VK_LMENU) && IsKeyPressed(VK_LSHIFT) && !IsKeyPressed(VK_CONTROL)) {
+                    SwitchToLayoutNumber(0);
+                }
+                g_lShiftKeyPressed = FALSE;
                 break;
             case VK_RMENU:
-            case VK_RSHIFT:
-                if (IsKeyPressed(VK_RMENU) && IsKeyPressed(VK_RSHIFT) && !IsKeyPressed(VK_CONTROL)) {
+                if (!g_rMenuKeyPressed && IsKeyPressed(VK_RMENU) && IsKeyPressed(VK_RSHIFT) && !IsKeyPressed(VK_CONTROL)) {
                     SwitchToLayoutNumber(1);
                 }
+                g_rMenuKeyPressed = FALSE;
+                break;
+            case VK_RSHIFT:
+                if (!g_rShiftKeyPressed && IsKeyPressed(VK_RMENU) && IsKeyPressed(VK_RSHIFT) && !IsKeyPressed(VK_CONTROL)) {
+                    SwitchToLayoutNumber(1);
+                }
+                g_rShiftKeyPressed = FALSE;
                 break;
             default:
+                if (IsKeyPressed(VK_LMENU)) {
+                    g_lMenuKeyPressed = TRUE;
+                }
+                if (IsKeyPressed(VK_LSHIFT)) {
+                    g_lShiftKeyPressed = TRUE;
+                }
+                if (IsKeyPressed(VK_RMENU)) {
+                    g_rMenuKeyPressed = TRUE;
+                }
+                if (IsKeyPressed(VK_RSHIFT)) {
+                    g_rShiftKeyPressed = TRUE;
+                }
                 break;
             }
         }
